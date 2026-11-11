@@ -25,7 +25,7 @@ MySQL Server / XAMPP / Laragon (Port 3306)
 Git CLI
 Langkah Instalasi:
 # 1. Klon repositori ini
-git clone https://github.com/Davin147/perpusDigital.git
+git clone https://github.com/Davin147/UKK2026_KLP-13_SMART-LIBRARY
 cd perpusDigital
 
 # 2. Buka proyek melalui Apache NetBeans IDE
