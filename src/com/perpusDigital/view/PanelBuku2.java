@@ -45,12 +45,44 @@ public final class PanelBuku2 extends javax.swing.JPanel {
     public PanelBuku2() {
         initComponents();
         loadDataBuku();
-        javax.swing.table.DefaultTableModel No = (javax.swing.table.DefaultTableModel) tabel_buku.getModel();
-        javax.swing.table.DefaultTableModel Judul = (javax.swing.table.DefaultTableModel) tabel_buku.getModel();
-        javax.swing.table.DefaultTableModel Penulis = (javax.swing.table.DefaultTableModel) tabel_buku.getModel();
-        javax.swing.table.DefaultTableModel Penerbit = (javax.swing.table.DefaultTableModel) tabel_buku.getModel();
-        javax.swing.table.DefaultTableModel Kategori = (javax.swing.table.DefaultTableModel) tabel_buku.getModel();
-        javax.swing.table.DefaultTableModel Stok = (javax.swing.table.DefaultTableModel) tabel_buku.getModel();
+         DefaultTableModel model = new DefaultTableModel();
+    model.addColumn("No");
+    model.addColumn("ID"); // Tambahkan kolom ID (bisa disembunyikan tampilannya nanti)
+    model.addColumn("Judul Buku");
+    model.addColumn("Penulis");
+    model.addColumn("Penerbit");
+    model.addColumn("Kategori");
+    model.addColumn("Tahun Terbit");
+    model.addColumn("Stok");
+
+    try {
+        int no = 1;
+        String sql = "SELECT * FROM buku";
+        Connection conn = Koneksi.getKoneksi();
+        Statement stm = conn.createStatement();
+        ResultSet res = stm.executeQuery(sql);
+
+        while (res.next()) {
+            model.addRow(new Object[]{
+                no++,
+                res.getInt("id_buku"), // Ambil primary key asli dari database
+                res.getString("judul_buku"),
+                res.getString("penulis"),
+                res.getString("penerbit"),
+                res.getString("kategori"),
+                res.getInt("tahun_terbit"),
+                res.getInt("stok")
+            });
+        }
+        tabel_buku.setModel(model);
+        
+        // Opsional: Sembunyikan kolom ID (kolom ke-1) agar tidak mengganggu tampilan UI
+        // tabel_buku.getColumnModel().getColumn(1).setMinWidth(0);
+        // tabel_buku.getColumnModel().getColumn(1).setMaxWidth(0);
+        
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Gagal memuat data: " + e.getMessage());
+    }
     }
 
     /**
@@ -62,7 +94,6 @@ public final class PanelBuku2 extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jTextField1 = new javax.swing.JTextField();
         jScrollPane1 = new javax.swing.JScrollPane();
         tabel_buku = new javax.swing.JTable();
         jLabel2 = new javax.swing.JLabel();
@@ -73,14 +104,6 @@ public final class PanelBuku2 extends javax.swing.JPanel {
         jLabel4 = new javax.swing.JLabel();
         btn_tambah1 = new javax.swing.JButton();
         jLabel5 = new javax.swing.JLabel();
-
-        jTextField1.setForeground(new java.awt.Color(204, 204, 204));
-        jTextField1.setText("Cari Buku.....");
-        jTextField1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextField1ActionPerformed(evt);
-            }
-        });
 
         tabel_buku.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -148,9 +171,7 @@ public final class PanelBuku2 extends javax.swing.JPanel {
                 .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btn_hapus1)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 1228, Short.MAX_VALUE)
-                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 167, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(24, 24, 24))
+                .addContainerGap(1419, Short.MAX_VALUE))
             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(layout.createSequentialGroup()
                     .addGap(1, 1, 1)
@@ -167,10 +188,6 @@ public final class PanelBuku2 extends javax.swing.JPanel {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(108, 108, 108)
-                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(950, Short.MAX_VALUE))
-            .addGroup(layout.createSequentialGroup()
                 .addGap(90, 90, 90)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(btn_tambah1)
@@ -180,7 +197,7 @@ public final class PanelBuku2 extends javax.swing.JPanel {
                     .addComponent(btn_hapus1)
                     .addComponent(jButton3)
                     .addComponent(jLabel4))
-                .addGap(0, 0, Short.MAX_VALUE))
+                .addGap(0, 967, Short.MAX_VALUE))
             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(layout.createSequentialGroup()
                     .addGap(15, 15, 15)
@@ -192,10 +209,6 @@ public final class PanelBuku2 extends javax.swing.JPanel {
                     .addGap(15, 15, 15)))
         );
     }// </editor-fold>//GEN-END:initComponents
-
-    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jTextField1ActionPerformed
 
     private void btn_tambah1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_tambah1ActionPerformed
         // Meminta inputan via Pop-up Dialog
@@ -236,27 +249,30 @@ public final class PanelBuku2 extends javax.swing.JPanel {
 
     private void btn_hapus1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_hapus1ActionPerformed
         int row = tabel_buku.getSelectedRow();
-        if (row != -1) {
-            String judul = tabel_buku.getValueAt(row, 1).toString();
-            int confirm = JOptionPane.showConfirmDialog(this, "Hapus buku " + judul + "?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+    if (row != -1) {
+        // Ambil ID dari kolom ke-1 (indeks 1)
+        String idBuku = tabel_buku.getValueAt(row, 1).toString();
+        String judulBuku = tabel_buku.getValueAt(row, 2).toString(); // Judul ada di indeks 2
+        
+        int confirm = JOptionPane.showConfirmDialog(this, "Hapus buku \"" + judulBuku + "\"?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
 
-            if (confirm == JOptionPane.YES_OPTION) {
-                try {
-                    String sql = "DELETE FROM buku WHERE judul = ?";
-                    Connection conn = com.perpusDigital.config.Koneksi.getKoneksi();
-                    PreparedStatement pst = conn.prepareStatement(sql);
-                    pst.setString(1, judul);
-                    pst.executeUpdate();
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                String sql = "DELETE FROM buku WHERE id_buku = ?";
+                Connection conn = com.perpusDigital.config.Koneksi.getKoneksi();
+                PreparedStatement pst = conn.prepareStatement(sql);
+                pst.setString(1, idBuku);
+                pst.executeUpdate();
 
-                    JOptionPane.showMessageDialog(this, "Data Berhasil Dihapus!");
-                    loadDataBuku();
-                } catch (HeadlessException | SQLException e) {
-                    JOptionPane.showMessageDialog(this, "Gagal Hapus: " + e.getMessage());
-                }
+                JOptionPane.showMessageDialog(this, "Data Berhasil Dihapus!");
+                loadDataBuku();
+            } catch (HeadlessException | SQLException e) {
+                JOptionPane.showMessageDialog(this, "Gagal Hapus: " + e.getMessage());
             }
-        } else {
-            JOptionPane.showMessageDialog(this, "Pilih data pada tabel terlebih dahulu!");
         }
+    } else {
+        JOptionPane.showMessageDialog(this, "Pilih data pada tabel terlebih dahulu!");
+    }
     }//GEN-LAST:event_btn_hapus1ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
@@ -274,7 +290,6 @@ public final class PanelBuku2 extends javax.swing.JPanel {
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTextField jTextField1;
     private javax.swing.JTable tabel_buku;
     // End of variables declaration//GEN-END:variables
 }

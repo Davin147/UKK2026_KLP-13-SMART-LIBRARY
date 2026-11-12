@@ -3,44 +3,47 @@ package com.perpusDigital.view;
 import java.sql.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JOptionPane;
+import com.perpusDigital.config.Koneksi;
+import com.toedter.calendar.JDateChooser;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class PanelPeminjaman2 extends javax.swing.JPanel {
 
     public void loadDataPeminjaman() {
     DefaultTableModel model = new DefaultTableModel();
-    model.addColumn("ID Pinjam");
-    model.addColumn("Tanggal Pinjam");
-    model.addColumn("Nama Anggota");
-    model.addColumn("Judul Buku");
-    model.addColumn("Tanggal Kembali");
-    model.addColumn("Status");
-    model.addColumn("Detail");
+        model.addColumn("ID Pinjam");
+        model.addColumn("Tanggal Pinjam");
+        model.addColumn("Nama Anggota");
+        model.addColumn("Judul Buku");
+        model.addColumn("Tanggal Kembali");
+        model.addColumn("Status");
 
-    try {
-        String sql = "SELECT p.id_peminjaman, p.tanggal_pinjam, a.nama, b.judul, p.tanggal_kembali, p.status " +
-                     "FROM peminjaman p " +
-                     "JOIN anggota a ON p.id_anggota = a.id_anggota " +
-                     "JOIN buku b ON p.id_buku = b.id_buku " +
-                     "ORDER BY p.id_peminjaman DESC";
-                     
-        Connection conn = com.perpusDigital.config.Koneksi.getKoneksi();
-        Statement stm = conn.createStatement();
-        ResultSet res = stm.executeQuery(sql);
+        try {
+            String sql = "SELECT p.id_peminjaman, p.tanggal_pinjam, a.nama, b.judul_buku, p.tanggal_kembali, p.status " +
+                         "FROM peminjaman p " +
+                         "JOIN anggota a ON p.id_anggota = a.id_anggota " +
+                         "JOIN buku b ON p.id_buku = b.id_buku " +
+                         "ORDER BY p.id_peminjaman DESC";
+                         
+            Connection conn = Koneksi.getKoneksi();
+            Statement stm = conn.createStatement();
+            ResultSet res = stm.executeQuery(sql);
 
-        while (res.next()) {
-            model.addRow(new Object[]{
-                res.getInt("id_peminjaman"),
-                res.getString("tanggal_pinjam"),
-                res.getString("nama"),
-                res.getString("judul"),
-                res.getString("tanggal_kembali"),
-                res.getString("status")
-            });
+            while (res.next()) {
+                model.addRow(new Object[]{
+                    res.getInt("id_peminjaman"),
+                    res.getString("tanggal_pinjam"),
+                    res.getString("nama"),
+                    res.getString("judul_buku"),
+                    res.getString("tanggal_kembali"),
+                    res.getString("status")
+                });
+            }
+            tablePeminjaman.setModel(model);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(PanelPeminjaman2.this, "Gagal memuat data peminjaman: " + e.getMessage());
         }
-        tablePeminjaman.setModel(model); // tablePeminjaman adalah JTable Anda
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Gagal memuat data peminjaman: " + e.getMessage());
-    }
 }
     public PanelPeminjaman2() {
         initComponents();
@@ -175,11 +178,29 @@ public class PanelPeminjaman2 extends javax.swing.JPanel {
     }//GEN-LAST:event_jTextField1ActionPerformed
 
     private void btnTambahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTambahActionPerformed
-        String idAnggota = JOptionPane.showInputDialog(this, "Masukkan ID Anggota:");
-        if (idAnggota == null || idAnggota.trim().isEmpty()) return;
+        String idAnggota = JOptionPane.showInputDialog(PanelPeminjaman2.this, "Masukkan ID Anggota:");
+    if (idAnggota == null || idAnggota.trim().isEmpty()) return;
 
-        String idBuku = JOptionPane.showInputDialog(this, "Masukkan ID Buku:");
-        String tglKembali = JOptionPane.showInputDialog(this, "Tanggal Kembali (YYYY-MM-DD):");
+    String idBuku = JOptionPane.showInputDialog(PanelPeminjaman2.this, "Masukkan ID Buku:");
+    if (idBuku == null || idBuku.trim().isEmpty()) return;
+
+    // Membuat komponen JDateChooser dari library JCalendar
+    com.toedter.calendar.JDateChooser dateChooser = new com.toedter.calendar.JDateChooser();
+    dateChooser.setDateFormatString("yyyy-MM-dd"); // Format tanggal database
+
+    // Menampilkan JDateChooser di dalam JOptionPane
+    int result = JOptionPane.showConfirmDialog(PanelPeminjaman2.this, dateChooser, "Pilih Tanggal Kembali", JOptionPane.OK_CANCEL_OPTION);
+    
+    if (result == JOptionPane.OK_OPTION) {
+        // Mengubah tanggal yang dipilih pada kalender menjadi format String (YYYY-MM-DD)
+        java.util.Date selectedDate = dateChooser.getDate();
+        if (selectedDate == null) {
+            JOptionPane.showMessageDialog(PanelPeminjaman2.this, "Tanggal tidak boleh kosong!");
+            return;
+        }
+        
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+        String tglKembali = sdf.format(selectedDate);
 
         try {
             Connection conn = com.perpusDigital.config.Koneksi.getKoneksi();
@@ -191,12 +212,12 @@ public class PanelPeminjaman2 extends javax.swing.JPanel {
             ResultSet rs = pstStok.executeQuery();
 
             if (rs.next() && rs.getInt("stok") > 0) {
-                // 2. Simpan Transaksi Peminjaman
-                String sqlPinjam = "INSERT INTO peminjaman (id_anggota, id_buku, tanggal_pinjam, tanggal_kembali, status, detail_peminjaman) VALUES (?, ?, ?, ?, ?, 'Dipinjam')";
+                // 2. Simpan Transaksi Peminjaman (menggunakan tanggal hari ini untuk tanggal_pinjam, atau sesuaikan)
+                String sqlPinjam = "INSERT INTO peminjaman (id_anggota, id_buku, tanggal_pinjam, tanggal_kembali, status) VALUES (?, ?, CURDATE(), ?, 'Dipinjam')";
                 PreparedStatement pstPinjam = conn.prepareStatement(sqlPinjam);
                 pstPinjam.setInt(1, Integer.parseInt(idAnggota));
                 pstPinjam.setInt(2, Integer.parseInt(idBuku));
-                pstPinjam.setString(4, tglKembali);
+                pstPinjam.setString(3, tglKembali);
                 pstPinjam.executeUpdate();
 
                 // 3. Kurangi stok buku
@@ -205,14 +226,15 @@ public class PanelPeminjaman2 extends javax.swing.JPanel {
                 pstUpdate.setInt(1, Integer.parseInt(idBuku));
                 pstUpdate.executeUpdate();
 
-                JOptionPane.showMessageDialog(this, "Transaksi Peminjaman Berhasil!");
+                JOptionPane.showMessageDialog(PanelPeminjaman2.this, "Transaksi Peminjaman Berhasil!");
                 loadDataPeminjaman();
             } else {
-                JOptionPane.showMessageDialog(this, "Stok buku tidak tersedia atau ID Buku salah!");
+                JOptionPane.showMessageDialog(PanelPeminjaman2.this, "Stok buku tidak tersedia atau ID Buku salah!");
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Gagal Transaksi: " + e.getMessage());
+            JOptionPane.showMessageDialog(PanelPeminjaman2.this, "Gagal Transaksi: " + e.getMessage());
         }
+    }
     }//GEN-LAST:event_btnTambahActionPerformed
 
     private void btnKembalikanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnKembalikanActionPerformed

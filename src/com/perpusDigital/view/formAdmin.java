@@ -162,7 +162,7 @@ public class formAdmin extends javax.swing.JFrame {
                 .addContainerGap())
         );
 
-        btn_Anggota.setText("Management");
+        btn_Anggota.setText("Anggota");
         btn_Anggota.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btn_AnggotaActionPerformed(evt);

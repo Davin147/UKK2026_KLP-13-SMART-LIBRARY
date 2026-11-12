@@ -46,12 +46,45 @@ public class panelBukuAdmin extends javax.swing.JPanel {
     public panelBukuAdmin() {
         initComponents();
          loadDataBuku();
-        javax.swing.table.DefaultTableModel No = (javax.swing.table.DefaultTableModel) tabel_buku.getModel();
-        javax.swing.table.DefaultTableModel Judul = (javax.swing.table.DefaultTableModel) tabel_buku.getModel();
-        javax.swing.table.DefaultTableModel Penulis = (javax.swing.table.DefaultTableModel) tabel_buku.getModel();
-        javax.swing.table.DefaultTableModel Penerbit = (javax.swing.table.DefaultTableModel) tabel_buku.getModel();
-        javax.swing.table.DefaultTableModel Kategori = (javax.swing.table.DefaultTableModel) tabel_buku.getModel();
-        javax.swing.table.DefaultTableModel Stok = (javax.swing.table.DefaultTableModel) tabel_buku.getModel();
+    DefaultTableModel model = new DefaultTableModel();
+    model.addColumn("No");
+    model.addColumn("ID"); // Tambahkan kolom ID (bisa disembunyikan tampilannya nanti)
+    model.addColumn("Judul Buku");
+    model.addColumn("Penulis");
+    model.addColumn("Penerbit");
+    model.addColumn("Kategori");
+    model.addColumn("Tahun Terbit");
+    model.addColumn("Stok");
+
+    try {
+        int no = 1;
+        String sql = "SELECT * FROM buku";
+        Connection conn = Koneksi.getKoneksi();
+        Statement stm = conn.createStatement();
+        ResultSet res = stm.executeQuery(sql);
+
+        while (res.next()) {
+            model.addRow(new Object[]{
+                no++,
+                res.getInt("id_buku"), // Ambil primary key asli dari database
+                res.getString("judul_buku"),
+                res.getString("penulis"),
+                res.getString("penerbit"),
+                res.getString("kategori"),
+                res.getInt("tahun_terbit"),
+                res.getInt("stok")
+            });
+        }
+        tabel_buku.setModel(model);
+        
+        // Opsional: Sembunyikan kolom ID (kolom ke-1) agar tidak mengganggu tampilan UI
+        // tabel_buku.getColumnModel().getColumn(1).setMinWidth(0);
+        // tabel_buku.getColumnModel().getColumn(1).setMaxWidth(0);
+        
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Gagal memuat data: " + e.getMessage());
+    }
+
     }
 
     /**
@@ -158,19 +191,16 @@ public class panelBukuAdmin extends javax.swing.JPanel {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(layout.createSequentialGroup()
-                            .addGap(96, 96, 96)
-                            .addComponent(btn_hapus))
-                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                            .addGap(96, 96, 96)
-                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jButton2)
-                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                        .addComponent(btn_tambah)
-                                        .addComponent(jLabel4)))
-                                .addComponent(jLabel5, javax.swing.GroupLayout.Alignment.TRAILING))))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(96, 96, 96)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(btn_hapus)
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(jButton2)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(btn_tambah)
+                                    .addComponent(jLabel4)))
+                            .addComponent(jLabel5, javax.swing.GroupLayout.Alignment.TRAILING)))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addGap(62, 62, 62)
                         .addComponent(jLabel1)))
@@ -229,28 +259,31 @@ public class panelBukuAdmin extends javax.swing.JPanel {
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void btn_hapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_hapusActionPerformed
-        int row = tabel_buku.getSelectedRow();
-        if (row != -1) {
-            String judul = tabel_buku.getValueAt(row, 1).toString();
-            int confirm = JOptionPane.showConfirmDialog(this, "Hapus buku " + judul + "?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+    int row = tabel_buku.getSelectedRow();
+    if (row != -1) {
+        // Ambil ID dari kolom ke-1 (indeks 1)
+        String idBuku = tabel_buku.getValueAt(row, 1).toString();
+        String judulBuku = tabel_buku.getValueAt(row, 2).toString(); // Judul ada di indeks 2
+        
+        int confirm = JOptionPane.showConfirmDialog(this, "Hapus buku \"" + judulBuku + "\"?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
 
-            if (confirm == JOptionPane.YES_OPTION) {
-                try {
-                    String sql = "DELETE FROM buku WHERE judul = ?";
-                    Connection conn = com.perpusDigital.config.Koneksi.getKoneksi();
-                    PreparedStatement pst = conn.prepareStatement(sql);
-                    pst.setString(1, judul);
-                    pst.executeUpdate();
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                String sql = "DELETE FROM buku WHERE id_buku = ?";
+                Connection conn = com.perpusDigital.config.Koneksi.getKoneksi();
+                PreparedStatement pst = conn.prepareStatement(sql);
+                pst.setString(1, idBuku);
+                pst.executeUpdate();
 
-                    JOptionPane.showMessageDialog(this, "Data Berhasil Dihapus!");
-                    loadDataBuku();
-                } catch (HeadlessException | SQLException e) {
-                    JOptionPane.showMessageDialog(this, "Gagal Hapus: " + e.getMessage());
-                }
+                JOptionPane.showMessageDialog(this, "Data Berhasil Dihapus!");
+                loadDataBuku();
+            } catch (HeadlessException | SQLException e) {
+                JOptionPane.showMessageDialog(this, "Gagal Hapus: " + e.getMessage());
             }
-        } else {
-            JOptionPane.showMessageDialog(this, "Pilih data pada tabel terlebih dahulu!");
         }
+    } else {
+        JOptionPane.showMessageDialog(this, "Pilih data pada tabel terlebih dahulu!");
+    }
     }//GEN-LAST:event_btn_hapusActionPerformed
 
 

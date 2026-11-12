@@ -81,13 +81,13 @@ public class panelDataAnggota extends javax.swing.JPanel {
 
         tableAnggota.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "No", "Nama", "NISN", "Kelas", "Jenis Kelamin", "Telepon", "kouta peminjaman"
+                "No", "Nama", "NISN", "Kelas", "Jenis Kelamin", "Telepon", "kouta peminjaman", "Tanggal Daftar"
             }
         ));
         jScrollPane1.setViewportView(tableAnggota);
@@ -100,12 +100,27 @@ public class panelDataAnggota extends javax.swing.JPanel {
 
         btn_tambah.setBackground(new java.awt.Color(255, 255, 102));
         btn_tambah.setText("Tambah");
+        btn_tambah.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn_tambahActionPerformed(evt);
+            }
+        });
 
         btn_edit.setBackground(new java.awt.Color(255, 255, 102));
         btn_edit.setText("Edit");
+        btn_edit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn_editActionPerformed(evt);
+            }
+        });
 
         btn_hapus.setBackground(new java.awt.Color(255, 255, 102));
         btn_hapus.setText("Hapus");
+        btn_hapus.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btn_hapusActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -146,18 +161,14 @@ public class panelDataAnggota extends javax.swing.JPanel {
                 .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 234, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(837, Short.MAX_VALUE))
             .addGroup(layout.createSequentialGroup()
+                .addGap(114, 114, 114)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(jLabel5)
                     .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(layout.createSequentialGroup()
-                            .addGap(114, 114, 114)
-                            .addComponent(btn_tambah))
-                        .addGroup(layout.createSequentialGroup()
-                            .addGap(114, 114, 114)
-                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jLabel1)
-                                .addComponent(btn_hapus)
-                                .addComponent(btn_edit)))))
+                        .addComponent(btn_tambah)
+                        .addComponent(jLabel1)
+                        .addComponent(btn_hapus)
+                        .addComponent(btn_edit)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(layout.createSequentialGroup()
@@ -170,6 +181,94 @@ public class panelDataAnggota extends javax.swing.JPanel {
                     .addContainerGap()))
         );
     }// </editor-fold>//GEN-END:initComponents
+
+    private void btn_hapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_hapusActionPerformed
+        int row = tableAnggota.getSelectedRow();
+        if (row != -1) {
+            String nis = tableAnggota.getValueAt(row, 2).toString();
+            String nama = tableAnggota.getValueAt(row, 1).toString();
+
+            int confirm = JOptionPane.showConfirmDialog(this, "Hapus anggota " + nama + "?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                try {
+                    String sql = "DELETE FROM anggota WHERE nis = ?";
+                    Connection conn = com.perpusDigital.config.Koneksi.getKoneksi();
+                    PreparedStatement pst = conn.prepareStatement(sql);
+                    pst.setString(1, nis);
+                    pst.executeUpdate();
+
+                    JOptionPane.showMessageDialog(this, "Anggota Berhasil Dihapus!");
+                    loadDataAnggota();
+                } catch (HeadlessException | SQLException e) {
+                    JOptionPane.showMessageDialog(this, "Gagal Hapus: " + e.getMessage());
+                }
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Pilih data anggota pada tabel terlebih dahulu!");
+        }
+    }//GEN-LAST:event_btn_hapusActionPerformed
+
+    private void btn_tambahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_tambahActionPerformed
+        String nama = JOptionPane.showInputDialog(this, "Masukkan Nama Anggota:");
+        if (nama == null || nama.trim().isEmpty()) return;
+
+        String nis = JOptionPane.showInputDialog(this, "Masukkan NIS:");
+        String kelas = JOptionPane.showInputDialog(this, "Masukkan Kelas (contoh: XI RPL 1):");
+        String kouta = JOptionPane.showInputDialog(this, "Masukan Kouta Peminjaman");
+        if (kouta == null || kouta.trim().isEmpty())return;
+        String jk = JOptionPane.showInputDialog(this, "Jenis Kelamin (Laki-laki / Perempuan):");
+        String telepon = JOptionPane.showInputDialog(this, "Masukkan Nomor Telepon:");
+
+        try {
+            String sql = "INSERT INTO anggota (nama_anggota, nis, kelas, jenis_kelamin, no_hp, kouta_peminjaman) VALUES (?, ?, ?, ?, ?, ?)";
+            Connection conn = com.perpusDigital.config.Koneksi.getKoneksi();
+            PreparedStatement pst = conn.prepareStatement(sql);
+
+            pst.setString(1, nama);
+            pst.setString(2, nis);
+            pst.setString(3, kelas);
+            pst.setString(4, jk);
+            pst.setString(5, telepon);
+            pst.setString(6, kouta);
+
+            pst.executeUpdate();
+            JOptionPane.showMessageDialog(this, "Data Anggota Berhasil Disimpan!");
+            loadDataAnggota();
+        } catch (HeadlessException | SQLException e) {
+            JOptionPane.showMessageDialog(this, "Gagal Simpan: " + e.getMessage());
+        }
+    }//GEN-LAST:event_btn_tambahActionPerformed
+
+    private void btn_editActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn_editActionPerformed
+        try {
+    
+    int baris = tableAnggota.getSelectedRow(); 
+    if (baris == -1) {
+        javax.swing.JOptionPane.showMessageDialog(this, "Pilih dulu buku pada tabel yang ingin diedit!");
+        return;
+    }
+    
+    String idPeminjaman = tableAnggota.getValueAt(baris, 0).toString();
+    
+    String statusBaru = javax.swing.JOptionPane.showInputDialog(this, "Masukkan Status Baru (Contoh: Dipinjam / Dikembalikan):");
+    if (statusBaru == null || statusBaru.trim().isEmpty()) return;    
+
+    String sql = "UPDATE buku SET status = ? WHERE id_buku = ?";
+    java.sql.Connection conn = com.perpusDigital.config.Koneksi.getKoneksi();
+    java.sql.PreparedStatement pst = conn.prepareStatement(sql);
+    
+    pst.setString(1, statusBaru);
+    pst.setString(2, idPeminjaman);
+    
+    pst.executeUpdate();
+    javax.swing.JOptionPane.showMessageDialog(this, "Data buku berhasil diperbarui!");
+    
+    loadDataAnggota();
+    
+} catch (HeadlessException | SQLException e) {
+    javax.swing.JOptionPane.showMessageDialog(this, "Gagal mengedit data: " + e.getMessage());
+}
+    }//GEN-LAST:event_btn_editActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
