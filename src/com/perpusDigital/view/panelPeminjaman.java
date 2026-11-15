@@ -7,6 +7,7 @@ import com.perpusDigital.config.Koneksi;
 import com.toedter.calendar.JDateChooser;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.math.BigDecimal;
 
 public class panelPeminjaman extends javax.swing.JPanel {
 
@@ -88,7 +89,7 @@ public class panelPeminjaman extends javax.swing.JPanel {
         jScrollPane1.setViewportView(tablePeminjaman);
 
         jLabel2.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
-        jLabel2.setText("Data Peminajaman");
+        jLabel2.setText("Data Peminjaman");
 
         jLabel3.setFont(new java.awt.Font("Segoe UI", 0, 10)); // NOI18N
         jLabel3.setText("Kelola data peminjaman buku");
@@ -136,7 +137,7 @@ public class panelPeminjaman extends javax.swing.JPanel {
                             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                 .addComponent(jLabel3)
                                 .addComponent(jLabel2))
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 1635, Short.MAX_VALUE))
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 1648, Short.MAX_VALUE))
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 1914, Short.MAX_VALUE))
                     .addContainerGap()))
         );
@@ -165,31 +166,13 @@ public class panelPeminjaman extends javax.swing.JPanel {
 
     private void btnTambahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTambahActionPerformed
     String idAnggota = JOptionPane.showInputDialog(panelPeminjaman.this, "Masukkan ID Anggota:");
-    if (idAnggota == null || idAnggota.trim().isEmpty()) return;
+        if (idAnggota == null || idAnggota.trim().isEmpty()) return;
 
-    String idBuku = JOptionPane.showInputDialog(panelPeminjaman.this, "Masukkan ID Buku:");
-    if (idBuku == null || idBuku.trim().isEmpty()) return;
-
-    // Membuat komponen JDateChooser dari library JCalendar
-    com.toedter.calendar.JDateChooser dateChooser = new com.toedter.calendar.JDateChooser();
-    dateChooser.setDateFormatString("yyyy-MM-dd"); // Format tanggal database
-
-    // Menampilkan JDateChooser di dalam JOptionPane
-    int result = JOptionPane.showConfirmDialog(panelPeminjaman.this, dateChooser, "Pilih Tanggal Kembali", JOptionPane.OK_CANCEL_OPTION);
-    
-    if (result == JOptionPane.OK_OPTION) {
-        // Mengubah tanggal yang dipilih pada kalender menjadi format String (YYYY-MM-DD)
-        java.util.Date selectedDate = dateChooser.getDate();
-        if (selectedDate == null) {
-            JOptionPane.showMessageDialog(panelPeminjaman.this, "Tanggal tidak boleh kosong!");
-            return;
-        }
-        
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
-        String tglKembali = sdf.format(selectedDate);
+        String idBuku = JOptionPane.showInputDialog(panelPeminjaman.this, "Masukkan ID Buku:");
+        if (idBuku == null || idBuku.trim().isEmpty()) return;
 
         try {
-            Connection conn = com.perpusDigital.config.Koneksi.getKoneksi();
+            Connection conn = Koneksi.getKoneksi();
 
             // 1. Cek ketersediaan stok buku
             String sqlCekStok = "SELECT stok FROM buku WHERE id_buku = ?";
@@ -198,12 +181,12 @@ public class panelPeminjaman extends javax.swing.JPanel {
             ResultSet rs = pstStok.executeQuery();
 
             if (rs.next() && rs.getInt("stok") > 0) {
-                // 2. Simpan Transaksi Peminjaman (menggunakan tanggal hari ini untuk tanggal_pinjam, atau sesuaikan)
-                String sqlPinjam = "INSERT INTO peminjaman (id_anggota, id_buku, tanggal_pinjam, tanggal_kembali, status) VALUES (?, ?, CURDATE(), ?, 'Dipinjam')";
+                // 2. Simpan Transaksi Peminjaman (Tanggal kembali otomatis +5 hari dari hari ini)[cite: 3]
+                String sqlPinjam = "INSERT INTO peminjaman (id_anggota, id_buku, tanggal_peminjaman, tanggal_kembali, status, detai_peminjaman) " +
+                                   "VALUES (?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 5 DAY), 'Dipinjam', ?)";
                 PreparedStatement pstPinjam = conn.prepareStatement(sqlPinjam);
                 pstPinjam.setInt(1, Integer.parseInt(idAnggota));
                 pstPinjam.setInt(2, Integer.parseInt(idBuku));
-                pstPinjam.setString(3, tglKembali);
                 pstPinjam.executeUpdate();
 
                 // 3. Kurangi stok buku
@@ -212,58 +195,87 @@ public class panelPeminjaman extends javax.swing.JPanel {
                 pstUpdate.setInt(1, Integer.parseInt(idBuku));
                 pstUpdate.executeUpdate();
 
-                JOptionPane.showMessageDialog(panelPeminjaman.this, "Transaksi Peminjaman Berhasil!");
+                JOptionPane.showMessageDialog(panelPeminjaman.this, "Peminjaman Berhasil! Batas waktu pengembalian otomatis 5 hari[cite: 3].");
                 loadDataPeminjaman();
             } else {
                 JOptionPane.showMessageDialog(panelPeminjaman.this, "Stok buku tidak tersedia atau ID Buku salah!");
             }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(panelPeminjaman.this, "ID Anggota dan ID Buku harus berupa angka!");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(panelPeminjaman.this, "Gagal Transaksi: " + e.getMessage());
         }
-    }
     }//GEN-LAST:event_btnTambahActionPerformed
 
     private void btnKembalikanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnKembalikanActionPerformed
-        // 1. Cek apakah baris pada tabel sudah dipilih oleh user
-        int baris = tablePeminjaman.getSelectedRow(); // Sesuaikan dengan nama variabel JTable Anda
+        int baris = tablePeminjaman.getSelectedRow();
         if (baris == -1) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Pilih data peminjaman pada tabel terlebih dahulu!");
+            JOptionPane.showMessageDialog(panelPeminjaman.this, "Pilih data peminjaman pada tabel terlebih dahulu!");
             return;
         }
 
-        // 2. Ambil ID Pengembalian dari kolom tabel (sesuaikan indeks kolomnya, misal kolom 0)
         String idPengembalian = tablePeminjaman.getValueAt(baris, 0).toString();
 
-        try {
-            java.sql.Connection conn = com.perpusDigital.config.Koneksi.getKoneksi();
+        int confirm = JOptionPane.showConfirmDialog(panelPeminjaman.this, "Proses pengembalian buku ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                Connection conn = Koneksi.getKoneksi();
 
-            // 3. Update status peminjaman menjadi 'Dikembalikan'
-            String sqlUpdate = "UPDATE peminjaman SET status = 'Dikembalikan' WHERE id_peminjaman = ?";
-            java.sql.PreparedStatement pstUpdate = conn.prepareStatement(sqlUpdate);
-            pstUpdate.setString(1, idPengembalian);
-            pstUpdate.executeUpdate();
+                // 1. Cek tanggal kembali dan hitung keterlambatan secara otomatis via SQL (DATEDIFF)
+                String sqlCekKeterlambatan = "SELECT id_buku, DATEDIFF(CURDATE(), tanggal_kembali) AS selisih_hari FROM peminjaman WHERE id_peminjaman = ?";
+                PreparedStatement pstCek = conn.prepareStatement(sqlCekKeterlambatan);
+                pstCek.setString(1, idPengembalian);
+                ResultSet rs = pstCek.executeQuery();
 
-            // 4. Masukkan data ke tabel denda sesuai struktur database Anda[span_1](start_span)[span_1](end_span)
-            // Kolom: id_pengembalian, Jenis_denda, jumlah_denda, status_denda, tanggal_pengembalian, keterangan
-            String sqlDenda = "INSERT INTO denda (id_pengembalian, Jenis_denda, jumlah_denda, status_denda, tanggal_pengembalian, keterangan) VALUES (?, ?, ?, ?, CURDATE(), ?)";
-            java.sql.PreparedStatement pstDenda = conn.prepareStatement(sqlDenda);
+                int idBuku = 0;
+                int hariTerlambat = 0;
 
-            pstDenda.setString(1, idPengembalian);
-            pstDenda.setString(2, "Terlambat");                                   // Jenis denda ('Terlambat' atau 'Rusak')
-            pstDenda.setBigDecimal(3, new java.math.BigDecimal(5000));             // Jumlah denda (contoh: Rp 5.000)
-            pstDenda.setString(4, "Belum");                                       // Status denda awal ('Belum' atau 'Lunas')
-            pstDenda.setString(5, "Terlambat mengembalikan dari batas waktu");      // Keterangan tambahan
+                if (rs.next()) {
+                    idBuku = rs.getInt("id_buku");
+                    int selisih = rs.getInt("selisih_hari");
+                    if (selisih > 0) {
+                        hariTerlambat = selisih; // Jika positif, berarti lewat dari 5 hari
+                    }
+                }
 
-            pstDenda.executeUpdate();
+                // 2. Update status peminjaman menjadi 'Dikembalikan'
+                String sqlUpdate = "UPDATE peminjaman SET status = 'Dikembalikan' WHERE id_peminjaman = ?";
+                PreparedStatement pstUpdate = conn.prepareStatement(sqlUpdate);
+                pstUpdate.setString(1, idPengembalian);
+                pstUpdate.executeUpdate();
 
-            // 5. Berikan informasi sukses
-            javax.swing.JOptionPane.showMessageDialog(this, "Buku berhasil dikembalikan dan denda berhasil dicatat!");
+                // 3. Kembalikan stok buku (+1)
+                if (idBuku != 0) {
+                    String sqlTambahStok = "UPDATE buku SET stok = stok + 1 WHERE id_buku = ?";
+                    PreparedStatement pstTambahStok = conn.prepareStatement(sqlTambahStok);
+                    pstTambahStok.setInt(1, idBuku);
+                    pstTambahStok.executeUpdate();
+                }
 
-            // 6. Refresh data tabel peminjaman agar tampilannya ter-update
-            // loadDataPeminjaman(); // Aktifkan baris ini jika Anda sudah punya method load data tabel
+                // 4. Jika terlambat (> 0 hari), catat otomatis ke tabel denda (Contoh tarif: Rp 2.000 / hari)
+                if (hariTerlambat > 0) {
+                    int tarifDendaPerHari = 2000;
+                    int totalDenda = hariTerlambat * tarifDendaPerHari;
 
-        } catch (Exception e) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Terjadi kesalahan saat memproses: " + e.getMessage());
+                    String sqlDenda = "INSERT INTO denda (id_peminjaman, Jenis_denda, jumlah_denda, status_denda, tanggal_pengembalian, keterangan) VALUES (?, ?, ?, ?, CURDATE(), ?)";
+                    PreparedStatement pstDenda = conn.prepareStatement(sqlDenda);
+                    pstDenda.setString(1, idPengembalian);
+                    pstDenda.setString(2, "Terlambat");
+                    pstDenda.setBigDecimal(3, new BigDecimal(totalDenda));
+                    pstDenda.setString(4, "Belum");
+                    pstDenda.setString(5, "Terlambat " + hariTerlambat + " hari dari batas 5 hari[cite: 3]");
+                    pstDenda.executeUpdate();
+
+                    JOptionPane.showMessageDialog(panelPeminjaman.this, "Buku berhasil dikembalikan.\nTerlambat " + hariTerlambat + " hari[cite: 3]. Denda tercatat: Rp " + totalDenda);
+                } else {
+                    JOptionPane.showMessageDialog(panelPeminjaman.this, "Buku berhasil dikembalikan tepat waktu! Tidak ada denda.");
+                }
+
+                loadDataPeminjaman();
+
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(panelPeminjaman.this, "Terjadi kesalahan saat memproses: " + e.getMessage());
+            }
         }
     }//GEN-LAST:event_btnKembalikanActionPerformed
 
