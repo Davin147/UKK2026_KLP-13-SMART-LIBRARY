@@ -238,7 +238,6 @@ public class PanelPeminjaman2 extends javax.swing.JPanel {
     }//GEN-LAST:event_btnTambahActionPerformed
 
     private void btnKembalikanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnKembalikanActionPerformed
-     // 1. Cek apakah baris pada tabel sudah dipilih oleh user
     int baris = tablePeminjaman.getSelectedRow(); // Sesuaikan dengan nama variabel JTable Anda
     if (baris == -1) {
         javax.swing.JOptionPane.showMessageDialog(this, "Pilih data peminjaman pada tabel terlebih dahulu!");
